@@ -61,7 +61,11 @@ function projectInternal(cwd: string) {
   }
   function rm() {
     try {
-      fs.rmdirSync(cwd, { recursive: true });
+      if (fs.rmSync) {
+        fs.rmSync(cwd, { recursive: true, force: true });
+      } else {
+        fs.rmdirSync(cwd, { recursive: true });
+      }
     } catch (err) {
       if (fs.existsSync(cwd)) throw err;
     }
