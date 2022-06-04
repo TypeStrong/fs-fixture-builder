@@ -1,6 +1,7 @@
 {
     "name": "@typestrong/fs-fixture-builder",
     "version": "0.0.0",
+    "main": "./dist/fs-helpers.js",
     "devDependencies": {
         "@tsconfig/node16": "^1.0.2",
         "@types/node": "^17.0.39",
@@ -8,5 +9,6 @@
     },
     "scripts": {
         "build": "tsc"
-    }
+    },
+    "files": ["./dist"]
 }
