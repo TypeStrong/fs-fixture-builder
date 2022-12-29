@@ -1,5 +1,5 @@
-import * as fs from 'fs';
-import * as Path from 'path';
+import * as fs from "fs";
+import * as Path from "path";
 
 // Helpers to describe a bunch of files in a project programmatically,
 // then write them to disk in a temp directory.
@@ -25,7 +25,7 @@ export interface DirectoryApi {
 
 export type ProjectAPI = ReturnType<typeof projectInternal>;
 
-export function file(path: string, content = '') {
+export function file(path: string, content = "") {
   return { path, content };
 }
 export function jsonFile<T>(path: string, obj: T) {
@@ -39,7 +39,7 @@ export function jsonFile<T>(path: string, obj: T) {
   return file;
 }
 
-export function tempdirProject(name = '') {
+export function tempdirProject(name = "") {
   const rootTmpDir = `${fixturesRootDir}/tmp/`;
   fs.mkdirSync(rootTmpDir, { recursive: true });
   const tmpdir = fs.mkdtempSync(`${fixturesRootDir}/tmp/${name}`);

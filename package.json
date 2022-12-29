@@ -10,5 +10,10 @@
     "scripts": {
         "prepare": "tsc"
     },
-    "files": ["./dist"]
+    "files": [
+        "./dist"
+    ],
+    "bin": {
+        "capture-fs-fixture": "./dist/capture-fixture.ts"
+    }
 }
