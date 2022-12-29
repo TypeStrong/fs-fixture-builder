@@ -84,7 +84,7 @@ function createFixture({ path, useTemp }: { path: string; useTemp: boolean }) {
 }
 
 function escapeContent(str: string) {
-  return str.replace(/[`\\$]/g, "\\$&");
+  return str.replace(/[`\\]|\$\{/g, "\\$&");
 }
 
 function main(): number {
