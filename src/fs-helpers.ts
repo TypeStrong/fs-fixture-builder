@@ -39,16 +39,28 @@ export function jsonFile<T>(path: string, obj: T) {
   return file;
 }
 
-export function tempdirProject(name = "") {
-  const rootTmpDir = `${fixturesRootDir}/tmp/`;
+export interface ProjectOptions {
+  name: string;
+  rootDir?: string;
+}
+
+export function tempdirProject(options: string | Partial<ProjectOptions> = "") {
+  if (typeof options === "string") {
+    options = { name: options };
+  }
+  const rootTmpDir = options.rootDir ?? `${fixturesRootDir}/tmp`;
   fs.mkdirSync(rootTmpDir, { recursive: true });
-  const tmpdir = fs.mkdtempSync(`${fixturesRootDir}/tmp/${name}`);
+  const tmpdir = fs.mkdtempSync(`${rootTmpDir}/${options.name ?? ""}`);
   return projectInternal(tmpdir);
 }
 
 export type Project = ReturnType<typeof project>;
-export function project(name: string) {
-  return projectInternal(`${fixturesRootDir}/tmp/${name}`);
+export function project(options: string | ProjectOptions) {
+  if (typeof options === "string") {
+    options = { name: options };
+  }
+  const rootDir = options.rootDir ?? `${fixturesRootDir}/tmp`;
+  return projectInternal(`${rootDir}/${options.name}`);
 }
 
 function projectInternal(cwd: string) {
