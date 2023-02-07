@@ -18,6 +18,7 @@ export interface JsonFile<T> extends File {
 }
 export interface DirectoryApi {
   add(file: File): File;
+  addFiles(files: Record<string, string | object | null | undefined>): File[];
   addFile(...args: Parameters<typeof file>): File;
   addJsonFile(...args: Parameters<typeof jsonFile>): JsonFile<any>;
   dir(dirPath: string, cb?: (dir: DirectoryApi) => void): DirectoryApi;
@@ -80,6 +81,15 @@ function projectInternal(cwd: string) {
       files.push(file);
       return file;
     }
+    function addFiles(files: Record<string, string | object | null | undefined>) {
+      return Object.entries(files).map(([path, content]) => {
+        if(typeof content === 'string') {
+          return addFile(path, content);
+        } else if(content !== undefined) {
+          return addJsonFile(path, content);
+        }
+      });
+    }
     function addFile(...args: Parameters<typeof file>) {
       return add(file(...args));
     }
@@ -91,6 +101,7 @@ function projectInternal(cwd: string) {
     }
     const _dir: DirectoryApi = {
       add,
+      addFiles,
       addFile,
       addJsonFile,
       dir,
