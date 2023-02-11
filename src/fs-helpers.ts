@@ -25,6 +25,7 @@ export interface JsonFile<T = unknown> extends BaseFile {
 export interface DirectoryApi {
   add<T extends BaseFile>(file: T): T;
   addFile(...args: Parameters<typeof file>): StringFile;
+  addFiles(files: Record<string, string | object | null | undefined>): File[];
   addJsonFile(...args: Parameters<typeof jsonFile>): JsonFile<any>;
   dir(dirPath: string, cb?: (dir: DirectoryApi) => void): DirectoryApi;
   readFrom(realFsDirPath: string, targetPath?: string, ignoredPaths?: string[]): void;
@@ -108,7 +109,6 @@ function projectInternal(cwd: string) {
     }
     return clonedProject;
   }
-  const { add, addFile, addJsonFile, dir, readFrom, getFile, getJsonFile } = createDirectory(cwd);
   function createDirectory(
     dirPath: string,
     cb?: (dir: DirectoryApi) => void
@@ -117,6 +117,15 @@ function projectInternal(cwd: string) {
       file.path = Path.join(dirPath, file.path);
       files.push(file);
       return file;
+    }
+    function addFiles(files: Record<string, string | object | null | undefined>) {
+      return Object.entries(files).map(([path, content]) => {
+        if(typeof content === 'string') {
+          return addFile(path, content);
+        } else if(content !== undefined) {
+          return addJsonFile(path, content);
+        }
+      }).filter(v => v !== undefined) as Array<StringFile | JsonFile<any>>;
     }
     function addFile(...args: Parameters<typeof file>) {
       return add(file(...args));
@@ -148,6 +157,7 @@ function projectInternal(cwd: string) {
     }
     const _dir: DirectoryApi = {
       add,
+      addFiles,
       addFile,
       addJsonFile,
       dir,
@@ -158,6 +168,7 @@ function projectInternal(cwd: string) {
     cb?.(_dir);
     return _dir;
   }
+  const { add, addFile, addJsonFile, dir, readFrom, getFile, getJsonFile, addFiles } = createDirectory(cwd);
   return {
     cwd,
     files,
@@ -167,6 +178,7 @@ function projectInternal(cwd: string) {
     getJsonFile,
     add,
     addFile,
+    addFiles,
     addJsonFile,
     write,
     rm,
