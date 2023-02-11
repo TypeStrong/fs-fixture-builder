@@ -1,5 +1,6 @@
 import * as fs from "fs";
 import * as Path from "path";
+import { readFromFsIntoFixture } from "./read-from";
 
 // Helpers to describe a bunch of files in a project programmatically,
 // then write them to disk in a temp directory.
@@ -9,27 +10,38 @@ export function setFixturesRootDir(path: string) {
   fixturesRootDir = path;
 }
 
-export interface File {
+export type File = StringFile | JsonFile<unknown>;
+export interface BaseFile {
   path: string;
   content: string;
 }
-export interface JsonFile<T> extends File {
+export interface StringFile extends BaseFile {
+  type: 'string';
+}
+export interface JsonFile<T = unknown> extends BaseFile {
+  type: 'json';
   obj: T;
 }
 export interface DirectoryApi {
-  add(file: File): File;
-  addFile(...args: Parameters<typeof file>): File;
+  add<T extends BaseFile>(file: T): T;
+  addFile(...args: Parameters<typeof file>): StringFile;
   addJsonFile(...args: Parameters<typeof jsonFile>): JsonFile<any>;
   dir(dirPath: string, cb?: (dir: DirectoryApi) => void): DirectoryApi;
+  readFrom(realFsDirPath: string, targetPath?: string, ignoredPaths?: string[]): void;
+  getFile(path: string): BaseFile | undefined;
+  getJsonFile(path: string): JsonFile<any> | undefined;
 }
 
 export type ProjectAPI = ReturnType<typeof projectInternal>;
+// Verify that ProjectAPI implements full DirectoryApi
+const _typeTest: DirectoryApi = null as any as ProjectAPI;
 
-export function file(path: string, content = "") {
-  return { path, content };
+export function file(path: string, content = ""): StringFile {
+  return { type: 'string', path, content };
 }
 export function jsonFile<T>(path: string, obj: T) {
   const file: JsonFile<T> = {
+    type: 'json',
     path,
     obj,
     get content() {
@@ -37,6 +49,13 @@ export function jsonFile<T>(path: string, obj: T) {
     },
   };
   return file;
+}
+function cloneFile<T extends File | BaseFile>(f: T): T {
+  if((f as File).type === 'json') {
+    return jsonFile(f.path, (f as JsonFile).obj) as T;
+  } else {
+    return file(f.path, f.content) as T;
+  }
 }
 
 export interface ProjectOptions {
@@ -64,7 +83,7 @@ export function project(options: string | ProjectOptions) {
 }
 
 function projectInternal(cwd: string) {
-  const files: File[] = [];
+  const files: BaseFile[] = [];
   function write() {
     for (const file of files) {
       fs.mkdirSync(Path.dirname(file.path), { recursive: true });
@@ -82,12 +101,19 @@ function projectInternal(cwd: string) {
       if (fs.existsSync(cwd)) throw err;
     }
   }
-  const { add, addFile, addJsonFile, dir } = createDirectory(cwd);
+  function clone() {
+    const clonedProject = projectInternal(cwd);
+    for(const f of (files as Array<StringFile | JsonFile<unknown>>)) {
+      clonedProject.add(cloneFile(f));
+    }
+    return clonedProject;
+  }
+  const { add, addFile, addJsonFile, dir, readFrom, getFile, getJsonFile } = createDirectory(cwd);
   function createDirectory(
     dirPath: string,
     cb?: (dir: DirectoryApi) => void
   ): DirectoryApi {
-    function add(file: File) {
+    function add<T extends BaseFile>(file: T) {
       file.path = Path.join(dirPath, file.path);
       files.push(file);
       return file;
@@ -101,23 +127,49 @@ function projectInternal(cwd: string) {
     function dir(path: string, cb?: (dir: DirectoryApi) => void) {
       return createDirectory(Path.join(dirPath, path), cb);
     }
+    function readFrom(realFsDirPath: string, targetPath?: string, ignoredPaths?: string[]): void {
+      const targetDir = targetPath ? dir(targetPath) : _dir;
+      readFromFsIntoFixture(realFsDirPath, targetDir);
+    }
+    function getFile(path: string): BaseFile | undefined {
+      const filePath = Path.join(dirPath, path);
+      // Search for most recently appended in case the same file was written multiple times,
+      // because we do not dedupe on write.
+      // A bit of a hack.
+      for(let i = files.length - 1; i >= 0; i--) {
+        const file = files[i];
+        if (file.path === filePath) return file;
+      }
+    }
+    function getJsonFile(path: string): JsonFile<any> | undefined {
+      const found = getFile(path);
+      if((found as JsonFile).type !== 'json') throw new Error(`Found file in fixture, but it is type ${(found as File).type} instead of json.`);
+      return found as JsonFile;
+    }
     const _dir: DirectoryApi = {
       add,
       addFile,
       addJsonFile,
       dir,
+      readFrom,
+      getFile,
+      getJsonFile,
     };
     cb?.(_dir);
     return _dir;
   }
   return {
     cwd,
-    files: [],
+    files,
     dir,
+    readFrom,
+    getFile,
+    getJsonFile,
     add,
     addFile,
     addJsonFile,
     write,
     rm,
+    clone,
   };
 }

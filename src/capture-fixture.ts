@@ -1,12 +1,6 @@
-import { readdirSync, readFileSync, statSync } from "fs";
-import { basename, join, relative, resolve } from "path";
-
-const IGNORED_PATHS = [
-  "node_modules",
-  ".git",
-  "package-lock.json",
-  "yarn.lock",
-];
+import { basename, relative, resolve } from "path";
+import { JsonFile, project, StringFile } from "./fs-helpers";
+import { readFromFsIntoFixture } from "./read-from";
 
 function parseArgs() {
   let useTemp = false;
@@ -25,58 +19,36 @@ function parseArgs() {
   return { useTemp, path: path ? resolve(path) : process.cwd() };
 }
 
-function createFixture({ path, useTemp }: { path: string; useTemp: boolean }) {
+function createFixture(options: { path: string; useTemp: boolean }) {
+  const { path: root, useTemp } = options;
   const out = [
-    `import { ${
-      useTemp ? "tempdirProject" : "project"
+    `import { ${useTemp ? "tempdirProject" : "project"
     } } from '@typestrong/fs-fixture-builder'`,
     "",
     useTemp
       ? "const fixture = tempdirProject()"
-      : `const fixture = project('${basename(path)}')`,
+      : `const fixture = project('${basename(root)}')`,
   ];
 
-  const root = path;
-  const queue = [path];
+  const fixture = project({ rootDir: '', name: 'root' });
+  fixture.readFrom(root);
 
-  while (queue.length) {
-    const current = queue.shift()!;
+  for (const _file of fixture.files) {
+    const file = _file as JsonFile<any> | StringFile;
 
-    if (IGNORED_PATHS.some((p) => current.endsWith(p))) continue;
-
-    try {
-      const stat = statSync(current);
-
-      if (stat.isFile()) {
-        const content = readFileSync(current, "utf-8");
-        const relPath = relative(root, current);
-
-        if (current.endsWith(".json")) {
-          try {
-            const parsed = JSON.parse(content);
-            out.push(
-              `fixture.addJsonFile('${relPath}', ${JSON.stringify(
-                parsed,
-                null,
-                "\t"
-              )})`
-            );
-            continue;
-          } catch {
-            // ignore
-          }
-        }
-
-        out.push(
-          `fixture.addFile('${relPath}', \`${escapeContent(content)}\`)`
-        );
-      } else if (stat.isDirectory()) {
-        queue.push(
-          ...readdirSync(current).map((inner) => join(current, inner))
-        );
-      }
-    } catch {
-      // ignore
+    const relPath = relative('/root', file.path);
+    if (file.type === 'json') {
+      out.push(
+        `fixture.addJsonFile('${relPath}', ${JSON.stringify(
+          file.obj,
+          null,
+          "\t"
+        )})`
+      );
+    } else {
+      out.push(
+        `fixture.addFile('${relPath}', \`${escapeContent(file.content)}\`)`
+      );
     }
   }
 
