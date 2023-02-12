@@ -102,7 +102,7 @@ function projectInternal(cwd: string) {
       if (fs.existsSync(cwd)) throw err;
     }
   }
-  function mirrorFrom(other: ProjectAPI) {
+  function copyFilesFrom(other: ProjectAPI) {
     for(const f of other.files) {
       add(cloneFile(f));
     }
@@ -181,7 +181,7 @@ function projectInternal(cwd: string) {
     addJsonFile,
     write,
     rm,
-    mirrorFrom,
+    copyFilesFrom
   };
   return fixture;
 }
