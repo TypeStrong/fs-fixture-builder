@@ -53,7 +53,7 @@ export function jsonFile<T>(path: string, obj: T) {
 }
 function cloneFile(f: File): File {
   if(f.type === 'json') {
-    return jsonFile(f.path, f.obj);
+    return jsonFile(f.path, JSON.parse(JSON.stringify(f.obj)));
   } else {
     return file(f.path, f.content);
   }
