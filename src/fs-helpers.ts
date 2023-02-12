@@ -102,12 +102,11 @@ function projectInternal(cwd: string) {
       if (fs.existsSync(cwd)) throw err;
     }
   }
-  function clone() {
-    const clonedProject = projectInternal(cwd);
-    for(const f of (files as Array<StringFile | JsonFile<unknown>>)) {
-      clonedProject.add(cloneFile(f));
+  function mirrorFrom(other: ProjectAPI) {
+    for(const f of other.files) {
+      add(cloneFile(f));
     }
-    return clonedProject;
+    return fixture;
   }
   function createDirectory(
     dirPath: string,
@@ -169,7 +168,7 @@ function projectInternal(cwd: string) {
     return _dir;
   }
   const { add, addFile, addJsonFile, dir, readFrom, getFile, getJsonFile, addFiles } = createDirectory(cwd);
-  return {
+  const fixture = {
     cwd,
     files,
     dir,
@@ -182,6 +181,7 @@ function projectInternal(cwd: string) {
     addJsonFile,
     write,
     rm,
-    clone,
+    mirrorFrom,
   };
+  return fixture;
 }
