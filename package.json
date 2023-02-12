@@ -1,6 +1,7 @@
 {
     "name": "@typestrong/fs-fixture-builder",
     "version": "0.0.0",
+    "license": "MIT",
     "main": "./dist/fs-helpers.js",
     "devDependencies": {
         "@tsconfig/node16": "^1.0.2",
