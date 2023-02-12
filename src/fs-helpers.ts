@@ -23,13 +23,13 @@ export interface JsonFile<T = unknown> extends BaseFile {
   obj: T;
 }
 export interface DirectoryApi {
-  add<T extends BaseFile>(file: T): T;
+  add<T extends File>(file: T): T;
   addFile(...args: Parameters<typeof file>): StringFile;
   addFiles(files: Record<string, string | object | null | undefined>): File[];
   addJsonFile(...args: Parameters<typeof jsonFile>): JsonFile<any>;
   dir(dirPath: string, cb?: (dir: DirectoryApi) => void): DirectoryApi;
   readFrom(realFsDirPath: string, targetPath?: string, ignoredPaths?: string[]): void;
-  getFile(path: string): BaseFile | undefined;
+  getFile(path: string): File | undefined;
   getJsonFile(path: string): JsonFile<any> | undefined;
 }
 
@@ -51,11 +51,11 @@ export function jsonFile<T>(path: string, obj: T) {
   };
   return file;
 }
-function cloneFile<T extends File | BaseFile>(f: T): T {
-  if((f as File).type === 'json') {
-    return jsonFile(f.path, (f as JsonFile).obj) as T;
+function cloneFile(f: File): File {
+  if(f.type === 'json') {
+    return jsonFile(f.path, f.obj);
   } else {
-    return file(f.path, f.content) as T;
+    return file(f.path, f.content);
   }
 }
 
@@ -84,7 +84,7 @@ export function project(options: string | ProjectOptions) {
 }
 
 function projectInternal(cwd: string) {
-  const files: BaseFile[] = [];
+  const files: File[] = [];
   function write() {
     for (const file of files) {
       fs.mkdirSync(Path.dirname(file.path), { recursive: true });
@@ -113,7 +113,7 @@ function projectInternal(cwd: string) {
     dirPath: string,
     cb?: (dir: DirectoryApi) => void
   ): DirectoryApi {
-    function add<T extends BaseFile>(file: T) {
+    function add<T extends File>(file: T) {
       file.path = Path.join(dirPath, file.path);
       files.push(file);
       return file;
@@ -140,7 +140,7 @@ function projectInternal(cwd: string) {
       const targetDir = targetPath ? dir(targetPath) : _dir;
       readFromFsIntoFixture(realFsDirPath, targetDir);
     }
-    function getFile(path: string): BaseFile | undefined {
+    function getFile(path: string): File | undefined {
       const filePath = Path.join(dirPath, path);
       // Search for most recently appended in case the same file was written multiple times,
       // because we do not dedupe on write.
@@ -152,8 +152,8 @@ function projectInternal(cwd: string) {
     }
     function getJsonFile(path: string): JsonFile<any> | undefined {
       const found = getFile(path);
-      if((found as JsonFile).type !== 'json') throw new Error(`Found file in fixture, but it is type ${(found as File).type} instead of json.`);
-      return found as JsonFile;
+      if(found && (found as JsonFile).type !== 'json') throw new Error(`Found file in fixture, but it is type ${(found as File).type} instead of json.`);
+      return found as JsonFile | undefined;
     }
     const _dir: DirectoryApi = {
       add,
