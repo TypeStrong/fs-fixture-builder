@@ -12,7 +12,8 @@
         "prepare": "tsc"
     },
     "files": [
-        "./dist"
+        "./dist",
+        "./src"
     ],
     "bin": {
         "capture-fs-fixture": "./dist/capture-fixture.ts"
