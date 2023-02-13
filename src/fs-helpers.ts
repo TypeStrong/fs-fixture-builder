@@ -137,7 +137,7 @@ function projectInternal(cwd: string) {
     }
     function readFrom(realFsDirPath: string, targetPath?: string, ignoredPaths?: string[]): void {
       const targetDir = targetPath ? dir(targetPath) : _dir;
-      readFromFsIntoFixture(realFsDirPath, targetDir);
+      readFromFsIntoFixture(realFsDirPath, targetDir, ignoredPaths);
     }
     function getFile(path: string): File | undefined {
       const filePath = Path.join(dirPath, path);
