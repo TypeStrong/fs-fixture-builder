@@ -27,7 +27,7 @@ export function readFromFsIntoFixture(root: string, fixture: DirectoryApi, ignor
         if (current.endsWith(".json")) {
           try {
             const parsed = JSON.parse(content);
-            fixture.addJsonFile(current, parsed);
+            fixture.addJsonFile(relPath, parsed);
             continue;
           } catch {
             // ignore
