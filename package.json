@@ -16,6 +16,6 @@
         "./src"
     ],
     "bin": {
-        "capture-fs-fixture": "./dist/capture-fixture.ts"
+        "capture-fs-fixture": "./dist/capture-fixture.js"
     }
 }
