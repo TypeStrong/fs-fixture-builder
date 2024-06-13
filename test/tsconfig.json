@@ -1,0 +1,12 @@
+{
+    "extends": "@tsconfig/node20/tsconfig.json",
+    "compilerOptions": {
+        "rootDir": ".",
+        "outDir": "dist",
+        "types": ["node"],
+        "newLine": "lf",
+    },
+    "references": [
+        { "path": "../src/tsconfig.json" }
+    ],
+}

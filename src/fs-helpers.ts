@@ -10,10 +10,10 @@ export function setFixturesRootDir(path: string) {
   fixturesRootDir = path;
 }
 
-export type File = StringFile | JsonFile<unknown>;
+export type File = StringFile | JsonFile<unknown> | CustomFile;
 export interface BaseFile {
   path: string;
-  content: string;
+  readonly content: string;
 }
 export interface StringFile extends BaseFile {
   type: 'string';
@@ -21,6 +21,11 @@ export interface StringFile extends BaseFile {
 export interface JsonFile<T = unknown> extends BaseFile {
   type: 'json';
   obj: T;
+}
+export interface CustomFile extends BaseFile {
+  type?: 'custom';
+  /** Optional method to clone this file. If not specified, files will be cloned with `{...file}` */
+  clone?(): this;
 }
 export interface DirectoryApi {
   add<T extends File>(file: T): T;
@@ -52,10 +57,12 @@ export function jsonFile<T>(path: string, obj: T) {
   return file;
 }
 function cloneFile(f: File): File {
-  if(f.type === 'json') {
+  if (f.type === 'json') {
     return jsonFile(f.path, JSON.parse(JSON.stringify(f.obj)));
-  } else {
+  } else if (f.type === 'string') {
     return file(f.path, f.content);
+  } else {
+    return f.clone?.() ?? { ...f };
   }
 }
 
@@ -103,7 +110,7 @@ function projectInternal(cwd: string) {
     }
   }
   function copyFilesFrom(other: ProjectAPI) {
-    for(const f of other.files) {
+    for (const f of other.files) {
       add(cloneFile(f));
     }
     return fixture;
@@ -119,9 +126,9 @@ function projectInternal(cwd: string) {
     }
     function addFiles(files: Record<string, string | object | null | undefined>) {
       return Object.entries(files).map(([path, content]) => {
-        if(typeof content === 'string') {
+        if (typeof content === 'string') {
           return addFile(path, content);
-        } else if(content !== undefined) {
+        } else if (content !== undefined) {
           return addJsonFile(path, content);
         }
       }).filter(v => v !== undefined) as Array<StringFile | JsonFile<any>>;
@@ -141,17 +148,13 @@ function projectInternal(cwd: string) {
     }
     function getFile(path: string): File | undefined {
       const filePath = Path.join(dirPath, path);
-      // Search for most recently appended in case the same file was written multiple times,
-      // because we do not dedupe on write.
-      // A bit of a hack.
-      for(let i = files.length - 1; i >= 0; i--) {
-        const file = files[i];
-        if (file.path === filePath) return file;
-      }
+      // Search for most recently appended in case the same file was written multiple times.
+      // The files array is public, so we can't rely on deduplication when adding files.
+      return files.findLast(file => file.path === filePath);
     }
     function getJsonFile(path: string): JsonFile<any> | undefined {
       const found = getFile(path);
-      if(found && (found as JsonFile).type !== 'json') throw new Error(`Found file in fixture, but it is type ${(found as File).type} instead of json.`);
+      if (found && found.type !== 'json') throw new Error(`Found file in fixture, but it is type ${(found as File).type} instead of json.`);
       return found as JsonFile | undefined;
     }
     const _dir: DirectoryApi = {
