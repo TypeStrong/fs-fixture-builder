@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, test } from "node:test"
 import { tempdirProject, type Project } from "#self"
 import { equal } from "assert";
-import { readFileSync } from "fs";
+import { lstatSync, readFileSync } from "fs";
 import { join } from "path";
 
 let fixture: Project;
@@ -28,3 +28,13 @@ test("Supports custom file types", () => {
 
     equal(readFileSync(join(fixture.cwd, "foo.txt"), "utf-8"), "stuff-suffix");
 })
+
+test("Supports defining symlinks", () => {
+    fixture.addFile("test.txt", "test");
+    fixture.addSymlink("test2.txt", "test.txt");
+    fixture.write();
+
+    equal(readFileSync(join(fixture.cwd, "test2.txt"), "utf-8"), "test");
+    const stat = lstatSync(join(fixture.cwd, "test2.txt"));
+    equal(stat.isSymbolicLink(), true);
+});
