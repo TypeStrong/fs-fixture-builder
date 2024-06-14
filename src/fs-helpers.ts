@@ -207,7 +207,8 @@ function projectInternal(cwd: string) {
     addSymlink,
     write,
     rm,
-    copyFilesFrom
+    copyFilesFrom,
+    [Symbol.dispose]: rm,
   };
   return fixture;
 }

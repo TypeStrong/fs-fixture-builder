@@ -18,6 +18,19 @@ Depending on your testing style, you may want to call `rm` in test teardown, or 
 leave the fixture on disk for manual testing. If the latter, you can call `rm` immediately before `write`
 to reset the fixture every time it runs.
 
+[Explicit Resource Management](https://github.com/tc39/proposal-explicit-resource-management)
+may also be used to automatically call `rm` on the project when it goes out of scope.
+
+```ts
+import { tempdirProject } from "@typestrong/fs-fixture-builder";
+import { test } from "node:test"
+
+test("Something with the filesystem", () => {
+    using project = tempdirProject();
+    // project will be cleaned up automatically after the test, even if it fails
+})
+```
+
 ## CLI
 
 The command `capture-fs-fixture` is provided by this package to traverse a directory and generate code to recreate

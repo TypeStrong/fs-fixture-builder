@@ -1,7 +1,7 @@
 import { afterEach, beforeEach, test } from "node:test"
 import { tempdirProject, type Project } from "#self"
 import { equal } from "assert";
-import { lstatSync, readFileSync } from "fs";
+import { existsSync, lstatSync, readFileSync } from "fs";
 import { join } from "path";
 
 let fixture: Project;
@@ -38,3 +38,13 @@ test("Supports defining symlinks", () => {
     const stat = lstatSync(join(fixture.cwd, "test2.txt"));
     equal(stat.isSymbolicLink(), true);
 });
+
+test("Supports explicit resource management", () => {
+    let cwd: string;
+    {
+        using fix = tempdirProject();
+        cwd = fix.cwd;
+    }
+
+    equal(existsSync(cwd), false);
+})
